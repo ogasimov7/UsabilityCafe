@@ -7,7 +7,7 @@ export default async function AdminUsers({ searchParams }: PageProps<"/admin/use
   const { q } = await searchParams;
   const query = typeof q === "string" ? q : "";
   const users = await db.user.findMany({
-    where: query ? { OR: [{ email: { contains: query } }, { name: { contains: query } }] } : {},
+    where: query ? { OR: [{ email: { contains: query, mode: "insensitive" } }, { name: { contains: query, mode: "insensitive" } }] } : {},
     orderBy: { createdAt: "desc" },
     take: 200,
   });

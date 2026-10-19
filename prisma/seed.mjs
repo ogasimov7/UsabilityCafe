@@ -2,7 +2,9 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const db = new PrismaClient();
-const hash = await bcrypt.hash("password123", 10);
+// Set SEED_PASSWORD when seeding a public deployment; the default is for local development only.
+const password = process.env.SEED_PASSWORD ?? "password123";
+const hash = await bcrypt.hash(password, 10);
 
 async function user(email, data) {
   return db.user.upsert({ where: { email }, update: {}, create: { email, passwordHash: hash, ...data } });
@@ -48,5 +50,5 @@ if (!(await db.project.findFirst({ where: { ownerId: designer.id } }))) {
     },
   });
 }
-console.log("Seeded. Logins (password123): admin@usability.cafe, designer@usability.cafe, tester@usability.cafe");
+console.log(`Seeded. Logins (${process.env.SEED_PASSWORD ? "SEED_PASSWORD" : "password123"}): admin@usability.cafe, designer@usability.cafe, tester@usability.cafe`);
 await db.$disconnect();

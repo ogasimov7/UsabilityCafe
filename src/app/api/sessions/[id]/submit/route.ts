@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db, parse } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { analyzeSession } from "@/lib/analysis";
+import { finalizeRecording } from "@/lib/storage";
 
 const body = z.object({
   duration: z.number().min(0).max(4 * 3600),
@@ -39,6 +40,11 @@ export async function POST(req: Request, ctx: RouteContext<"/api/sessions/[id]/s
       attentionOk,
     },
   });
-  after(() => analyzeSession(id).catch((e) => console.error("analysis failed", e)));
+  after(async () => {
+    // Join the uploaded parts into playable files, then analyze.
+    for (const [rel, mime] of [[s.screenPath, s.screenMime], [s.cameraPath, s.cameraMime]] as const)
+      if (rel) await finalizeRecording(rel, mime ?? "video/webm").catch((e) => console.error("finalize failed", rel, e));
+    await analyzeSession(id).catch((e) => console.error("analysis failed", e));
+  });
   return Response.json({ ok: true });
 }

@@ -2,13 +2,11 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { rm } from "node:fs/promises";
-import path from "node:path";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { COUNTED, eligibility } from "@/lib/market";
 import { AUTO_ACCEPT_HOURS, MIN_PAYOUT_CENTS } from "@/lib/rules";
-import { STORAGE_ROOT } from "@/lib/storage";
+import { removeFolder } from "@/lib/storage";
 import type { FormState } from "./auth";
 
 export async function updateProfile(_: FormState, form: FormData): Promise<FormState> {
@@ -64,7 +62,7 @@ export async function deleteRecording(form: FormData) {
   const user = await requireUser("TESTER");
   const s = await db.session.findUnique({ where: { id: String(form.get("sessionId")) } });
   if (!s || s.testerId !== user.id) return;
-  await rm(path.join(STORAGE_ROOT, "sessions", s.id), { recursive: true, force: true });
+  await removeFolder(`sessions/${s.id}`);
   await db.session.update({ where: { id: s.id }, data: { screenPath: null, cameraPath: null } });
   revalidatePath("/tester/sessions");
 }

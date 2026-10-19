@@ -1,13 +1,13 @@
 import path from "node:path";
-import { Readable } from "node:stream";
 import { db } from "@/lib/db";
 import { getUser } from "@/lib/auth";
-import { fileInfo, MIME, readStream } from "@/lib/storage";
+import { MIME, readStored } from "@/lib/storage";
 
 // Serves uploaded concepts and recordings to the people allowed to see them.
 export async function GET(req: Request, ctx: RouteContext<"/api/files/[...path]">) {
   const { path: parts } = await ctx.params;
   const rel = parts.join("/");
+  if (parts.some((p) => p === ".." || p === "." || p.endsWith(".parts"))) return new Response("Not found", { status: 404 });
   const user = await getUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
   const [area, id] = parts;
@@ -24,31 +24,24 @@ export async function GET(req: Request, ctx: RouteContext<"/api/files/[...path]"
   }
   if (!allowed) return new Response("Forbidden", { status: 403 });
 
-  let info;
-  try {
-    info = await fileInfo(rel);
-  } catch {
-    return new Response("Not found", { status: 404 });
-  }
-  const type = MIME[path.extname(rel).toLowerCase()] ?? "application/octet-stream";
+  const m = req.headers.get("range")?.match(/bytes=(\d*)-(\d*)/);
+  const range = m ? { start: m[1] ? Number(m[1]) : 0, end: m[2] ? Number(m[2]) : undefined } : undefined;
+  const file = await readStored(rel, range).catch(() => null);
+  if (!file) return new Response("Not found", { status: 404 });
+
   const headers: Record<string, string> = {
-    "Content-Type": type,
+    "Content-Type": MIME[path.extname(rel).toLowerCase()] ?? "application/octet-stream",
     "Accept-Ranges": "bytes",
     "Cache-Control": "private, no-store",
     "Content-Disposition": "inline",
     "X-Content-Type-Options": "nosniff",
   };
-  const range = req.headers.get("range")?.match(/bytes=(\d*)-(\d*)/);
-  if (range) {
-    const start = range[1] ? Number(range[1]) : 0;
-    const end = range[2] ? Math.min(Number(range[2]), info.size - 1) : info.size - 1;
-    if (start >= info.size) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${info.size}` } });
-    const stream = Readable.toWeb(readStream(info.full, start, end)) as ReadableStream;
-    return new Response(stream, {
+  if (file.partial) {
+    if (file.start >= file.size) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${file.size}` } });
+    return new Response(file.stream, {
       status: 206,
-      headers: { ...headers, "Content-Range": `bytes ${start}-${end}/${info.size}`, "Content-Length": String(end - start + 1) },
+      headers: { ...headers, "Content-Range": `bytes ${file.start}-${file.end}/${file.size}`, "Content-Length": String(file.end - file.start + 1) },
     });
   }
-  const stream = Readable.toWeb(readStream(info.full)) as ReadableStream;
-  return new Response(stream, { headers: { ...headers, "Content-Length": String(info.size) } });
+  return new Response(file.stream, { headers: { ...headers, "Content-Length": String(file.size) } });
 }
