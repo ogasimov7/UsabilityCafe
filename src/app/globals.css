@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f3f3f4;
+  --surface: #ffffff;
+  --surface-2: #f6f6f7;
+  --ink: #18181b;
+  --muted: #6b6b73;
+  --line: #e6e6ea;
+  --brand: #d9480f;
+  --brand-ink: #ffffff;
+  --accent: #ff5b1f;
+  --ok: #15803d;
+  --warn: #b45309;
+  --bad: #b91c1c;
+  --info: #3651d9;
+  /* Pastel note panels */
+  --peach: #fff2ea;
+  --peach-line: #ffd8c2;
+  --sky: #edf1ff;
+  --sky-line: #cfd9ff;
+  --lilac: #f5edff;
+  --lilac-line: #e4d2ff;
+  --mint: #ecfaf1;
+  --mint-line: #c6ecd4;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-accent: var(--accent);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --color-info: var(--info);
+  --color-peach: var(--peach);
+  --color-peach-line: var(--peach-line);
+  --color-sky: var(--sky);
+  --color-sky-line: var(--sky-line);
+  --color-lilac: var(--lilac);
+  --color-lilac-line: var(--lilac-line);
+  --color-mint: var(--mint);
+  --color-mint-line: var(--mint-line);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-unbounded);
+  --font-hand: var(--font-caveat);
+}
+
+/* Soft grey "notebook" page: faint ruled lines with a white glow at the top. */
+body {
+  color: var(--ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(80% 50% at 50% 0%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 70%),
+    repeating-linear-gradient(to bottom, transparent 0 55px, rgba(24, 24, 27, 0.055) 55px 56px);
+  background-attachment: fixed;
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer;
+}
+@utility btn-primary {
+  @apply btn bg-ink text-white shadow-[0_6px_16px_-6px_rgba(24,24,27,0.5)] hover:bg-[#2c2c31];
+}
+/* Orange call-to-action, used sparingly for the main action on a page. */
+@utility btn-brand {
+  @apply btn bg-gradient-to-b from-[#ff6a2b] to-[#e8470e] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(232,71,14,0.8),inset_0_1px_0_rgba(255,255,255,0.35)] hover:brightness-105;
+}
+@utility btn-ghost {
+  @apply btn border border-line bg-surface hover:bg-surface-2;
+}
+@utility btn-danger {
+  @apply btn bg-bad text-white hover:opacity-90;
+}
+@utility card {
+  @apply rounded-[22px] border border-white bg-surface p-5 shadow-[0_1px_2px_rgba(24,24,27,0.04),0_12px_32px_-12px_rgba(24,24,27,0.14)];
+}
+@utility input {
+  @apply w-full rounded-[12px] border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20;
+}
+@utility label {
+  @apply mb-1 block text-sm font-medium;
+}
+@utility hint {
+  @apply text-xs text-muted;
+}
+@utility badge {
+  @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
+}
+@utility h1 {
+  @apply font-display text-2xl font-semibold tracking-[-0.6px] sm:text-[30px] sm:leading-[36px];
+}
+@utility h2 {
+  @apply font-display text-lg font-semibold tracking-[-0.3px];
+}
+/* Big grey-gradient headline from the reference infographic. */
+@utility headline {
+  @apply font-display font-semibold tracking-[-1.5px];
+  background: linear-gradient(180deg, #8a8a92 0%, #2a2a2f 70%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Pinned note: white frame with a pastel inner panel. */
+@utility note {
+  @apply relative rounded-[26px] bg-surface p-3 shadow-[0_2px_4px_rgba(24,24,27,0.04),0_24px_48px_-16px_rgba(24,24,27,0.2)];
+}
+@utility note-panel {
+  @apply rounded-[18px] border p-5;
+}
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; color: black; }
+  .card { break-inside: avoid; border-color: #ddd; box-shadow: none; }
+}

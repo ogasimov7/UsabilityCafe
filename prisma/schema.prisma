@@ -1,0 +1,167 @@
+// Local dev uses SQLite. For production switch provider to "postgresql"
+// and point DATABASE_URL at a Postgres database.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String // DESIGNER | TESTER | ADMIN
+  suspended    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  // Designer billing
+  plan           String @default("PAYG") // PAYG | STARTER | PRO
+  sessionCredits Int    @default(0)
+
+  // Tester profile / screener
+  birthYear   Int?
+  country     String?
+  device      String? // DESKTOP | MOBILE | TABLET
+  profession  String?
+  specialist  Boolean @default(false)
+  consentAt   DateTime?
+  ndaAt       DateTime?
+  points      Int     @default(0)
+  balanceCents Int    @default(0)
+
+  projects     Project[]
+  sessions     Session[]
+  transactions Transaction[]
+  payouts      Payout[]
+  payments     Payment[]
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  tests     Test[]
+  createdAt DateTime @default(now())
+}
+
+model Test {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  // DRAFT | PENDING_PAYMENT | OPEN | PAUSED | COMPLETED | REJECTED
+  status      String   @default("DRAFT")
+  conceptType String // LINK | IMAGES | PDF | VIDEO
+  conceptUrl  String?
+  assets      String   @default("[]") // JSON array of uploaded file paths
+  tasks       String   @default("[]") // JSON [{title, instructions}]
+  questions   String   @default("[]") // JSON [{prompt, kind: TEXT|RATING}]
+  attention   String   @default("{}") // JSON {prompt, answer}
+  // Targeting
+  ageMin      Int?
+  ageMax      Int?
+  countries   String   @default("[]")
+  devices     String   @default("[]")
+  profession  String?
+  specialist  Boolean  @default(false)
+  sessionsWanted Int   @default(5)
+  priceCents  Int      @default(0) // designer price per session
+  feeCents    Int      @default(500) // base tester fee
+  minSeconds  Int      @default(60)
+  moderationNote String?
+  createdAt   DateTime @default(now())
+  publishedAt DateTime?
+  report      String? // JSON aggregated report
+  reportRating Int?
+  sessions    Session[]
+  payments    Payment[]
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  testId      String
+  test        Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  testerId    String
+  tester      User     @relation(fields: [testerId], references: [id], onDelete: Cascade)
+  // IN_PROGRESS | SUBMITTED | ANALYZING | READY | ACCEPTED | REJECTED | DISPUTED | ABANDONED
+  status      String   @default("IN_PROGRESS")
+  startedAt   DateTime @default(now())
+  submittedAt DateTime?
+  decidedAt   DateTime?
+  durationSec Int      @default(0)
+  screenPath  String?
+  cameraPath  String?
+  screenMime  String?
+  cameraMime  String?
+  transcript  String   @default("[]") // JSON [{t, text}]
+  events      String   @default("[]") // JSON [{t, type, task, success?}]
+  notes       String   @default("[]") // JSON [{t, text}]
+  answers     String   @default("[]") // JSON [{prompt, answer}]
+  attentionOk Boolean?
+  analysis    String? // JSON analysis
+  qualityScore Int?
+  flagged     Boolean  @default(false)
+  flagReason  String?
+  rating      Int? // designer rating 1-5
+  rejectReason String?
+  disputeReason String?
+  adminNote   String?
+  paidCents   Int      @default(0)
+  pointsAwarded Int    @default(0)
+
+  @@unique([testId, testerId])
+}
+
+model Transaction {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String // FEE | BONUS | PAYOUT | POINTS | ADJUSTMENT
+  amountCents Int    @default(0)
+  points    Int      @default(0)
+  memo      String
+  sessionId String?
+  createdAt DateTime @default(now())
+}
+
+model Payout {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountCents Int
+  method      String // STRIPE | PAYPAL
+  destination String
+  status      String   @default("REQUESTED") // REQUESTED | APPROVED | PAID | DECLINED
+  createdAt   DateTime @default(now())
+  decidedAt   DateTime?
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testId      String?
+  test        Test?    @relation(fields: [testId], references: [id], onDelete: SetNull)
+  kind        String // TEST | PLAN
+  plan        String?
+  amountCents Int
+  creditsUsed Int      @default(0)
+  status      String   @default("PENDING") // PENDING | PAID
+  provider    String // STRIPE | DEV
+  providerRef String?
+  createdAt   DateTime @default(now())
+}
+
+model Waitlist {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  role      String
+  referrer  String?
+  createdAt DateTime @default(now())
+}
