@@ -18,10 +18,6 @@ model User {
   suspended    Boolean  @default(false)
   createdAt    DateTime @default(now())
 
-  // Designer billing
-  plan           String @default("PAYG") // PAYG | STARTER | PRO
-  sessionCredits Int    @default(0)
-
   // Tester profile / screener
   birthYear   Int?
   country     String?
@@ -71,8 +67,7 @@ model Test {
   profession  String?
   specialist  Boolean  @default(false)
   sessionsWanted Int   @default(5)
-  priceCents  Int      @default(0) // designer price per session
-  feeCents    Int      @default(500) // base tester fee
+  priceCents  Int      @default(500) // reward per session set by the designer; testers receive it minus the 10% platform fee
   minSeconds  Int      @default(60)
   moderationNote String?
   createdAt   DateTime @default(now())
@@ -112,7 +107,8 @@ model Session {
   rejectReason String?
   disputeReason String?
   adminNote   String?
-  paidCents   Int      @default(0)
+  paidCents   Int      @default(0) // paid to the tester
+  feeCents    Int      @default(0) // kept by the platform
   pointsAwarded Int    @default(0)
 
   @@unique([testId, testerId])
@@ -148,10 +144,8 @@ model Payment {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   testId      String?
   test        Test?    @relation(fields: [testId], references: [id], onDelete: SetNull)
-  kind        String // TEST | PLAN
-  plan        String?
+  kind        String // TEST
   amountCents Int
-  creditsUsed Int      @default(0)
   status      String   @default("PENDING") // PENDING | PAID
   provider    String // STRIPE | DEV
   providerRef String?

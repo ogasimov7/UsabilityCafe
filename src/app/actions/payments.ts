@@ -12,5 +12,5 @@ export async function simulatePayment(form: FormData) {
   const p = await db.payment.findUnique({ where: { id: String(form.get("paymentId")) } });
   if (!p || p.userId !== user.id) throw new Error("Not found");
   await markPaymentPaid(p.id, "dev");
-  redirect(p.testId ? `/designer/tests/${p.testId}` : "/designer/billing");
+  redirect(p.testId ? `/designer/tests/${p.testId}` : "/designer/payments");
 }

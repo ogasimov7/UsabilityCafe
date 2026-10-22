@@ -19,7 +19,7 @@ export default async function TestPage({ params }: PageProps<"/designer/tests/[i
   if (!test || (test.project.ownerId !== user.id && user.role !== "ADMIN")) notFound();
   const tasks = parse<TaskDef[]>(test.tasks, []);
   const report = parse<Report | null>(test.report, null);
-  const quote = quoteTest(user, test);
+  const quote = quoteTest(test);
   const delivered = test.sessions.filter((s) => !["IN_PROGRESS", "ABANDONED"].includes(s.status));
   const countries = parse<string[]>(test.countries, []);
   const devices = parse<string[]>(test.devices, []);
@@ -53,14 +53,13 @@ export default async function TestPage({ params }: PageProps<"/designer/tests/[i
           <input type="hidden" name="testId" value={test.id} />
           <div className="flex-1">
             <div className="font-semibold">Last step: publish your test</div>
-            <div className="text-sm text-ink/70">Testers can&apos;t see it until it&apos;s published.</div>
-            <div className="text-sm text-muted">
-              {test.sessionsWanted} sessions × {money(quote.unit)}
-              {quote.creditsUsed > 0 && ` · ${quote.creditsUsed} free credit(s) applied`}
+            <div className="text-sm text-ink/70">It appears on the job board once the sessions are funded.</div>
+            <div className="text-sm text-ink/70">
+              {test.sessionsWanted} sessions × {money(quote.unit)} · each tester receives {money(quote.testerGets)} after the 10% service fee
             </div>
           </div>
           <div className="font-display text-2xl font-semibold">{money(quote.amountCents)}</div>
-          <button className="btn-brand">{quote.amountCents ? "Pay & publish" : "Publish with free credits"}</button>
+          <button className="btn-brand">Fund & publish</button>
         </form>
         </Note>
       )}

@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { createSession, destroySession, hashPassword, homeFor, verifyPassword, type Role } from "@/lib/auth";
-import { FREE_CREDITS_FOR_NEW_DESIGNERS, FREE_CREDIT_DESIGNER_LIMIT } from "@/lib/rules";
 
 export type FormState = { error?: string; ok?: string } | undefined;
 
@@ -43,10 +42,6 @@ export async function signup(_: FormState, form: FormData): Promise<FormState> {
       consentAt: new Date(),
       ndaAt: new Date(),
     };
-  } else {
-    const designers = await db.user.count({ where: { role: "DESIGNER" } });
-    const student = form.get("student") === "on";
-    if (designers < FREE_CREDIT_DESIGNER_LIMIT || student) extra = { sessionCredits: FREE_CREDITS_FOR_NEW_DESIGNERS };
   }
 
   const user = await db.user.create({

@@ -9,5 +9,5 @@ export async function GET(req: Request) {
   const ok = await verifyStripe(paymentId, cs);
   const p = await db.payment.findUnique({ where: { id: paymentId } });
   if (!ok || !p) redirect(`/checkout/${paymentId}?failed=1`);
-  redirect(p.testId ? `/designer/tests/${p.testId}` : "/designer/billing");
+  redirect(p.testId ? `/designer/tests/${p.testId}` : "/designer/payments");
 }

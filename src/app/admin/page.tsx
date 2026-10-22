@@ -18,7 +18,7 @@ export default async function AdminHome() {
     db.user.count({ where: { role: "DESIGNER" } }),
     db.user.count({ where: { role: "TESTER" } }),
     db.test.findMany({ include: { project: true, sessions: { select: { submittedAt: true, status: true } } } }),
-    db.session.findMany({ select: { status: true, testerId: true, submittedAt: true, paidCents: true } }),
+    db.session.findMany({ select: { status: true, testerId: true, submittedAt: true, paidCents: true, feeCents: true } }),
     db.payment.findMany({ where: { status: "PAID" } }),
     db.payout.count({ where: { status: "REQUESTED" } }),
     db.session.count({ where: { OR: [{ status: "DISPUTED" }, { status: "READY", flagged: true }] } }),
@@ -45,10 +45,11 @@ export default async function AdminHome() {
     .sort((a, b) => a - b);
   const median = hoursToFive.length ? hoursToFive[Math.floor(hoursToFive.length / 2)] : null;
 
-  const revenue = payments.reduce((n, p) => n + p.amountCents, 0);
+  // Designers fund sessions up front (GMV); the platform's revenue is the 10% fee on accepted sessions.
+  const gmv = payments.reduce((n, p) => n + p.amountCents, 0);
   const paidSessions = sessions.filter((s) => s.status === "ACCEPTED");
-  const payout = paidSessions.reduce((n, s) => n + s.paidCents, 0);
-  const cost = payout + paidSessions.length * VIDEO_AI_COST_CENTS;
+  const revenue = paidSessions.reduce((n, s) => n + s.feeCents, 0);
+  const cost = paidSessions.length * VIDEO_AI_COST_CENTS;
   const margin = revenue ? (revenue - cost) / revenue : 0;
 
   return (
@@ -63,8 +64,8 @@ export default async function AdminHome() {
         <Stat label="Active testers (30d)" value={activeTesters} hint="Target 3,000" />
         <Stat label="Sessions accepted" value={decided.length ? pct(acceptRate) : "—"} hint="Target 90%" />
         <Stat label="Reports rated useful" value={rated.length ? pct(useful) : "—"} hint="Target 75%" />
-        <Stat label="Gross margin" value={revenue ? pct(margin) : "—"} hint="Target 35%" />
-        <Stat label="Revenue collected" value={money(revenue)} />
+        <Stat label="Gross margin" value={revenue ? pct(margin) : "—"} hint="After ~$2 video + AI cost per session" />
+        <Stat label="Platform fees earned (10%)" value={money(revenue)} hint={`${money(gmv)} funded by designers`} />
       </div>
       <h2 className="h2">Right now</h2>
       <p className="hint mb-4 mt-1">Queues that need an admin.</p>

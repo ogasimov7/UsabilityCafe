@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 export function NavLinks({ items }: { items: { href: string; label: string }[] }) {
   const path = usePathname();
-  // The most specific matching link is active, so "/designer" isn't lit up on "/designer/billing".
+  // The most specific matching link is active, so "/designer" isn't lit up on "/designer/payments".
   const active = items
     .filter((n) => path === n.href || path.startsWith(`${n.href}/`))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;

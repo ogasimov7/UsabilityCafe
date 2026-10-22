@@ -24,7 +24,7 @@ export default async function AdminUsers({ searchParams }: PageProps<"/admin/use
                 <td className="p-3">{u.name}<div className="text-xs text-muted">{u.email}</div></td>
                 <td className="p-3"><Badge tone={u.role === "ADMIN" ? "brand" : u.role === "DESIGNER" ? "info" : "ok"}>{u.role.toLowerCase()}</Badge></td>
                 <td className="p-3 text-muted">
-                  {u.role === "TESTER" ? `${levelFor(u.points).name} · ${u.points} pts · ${money(u.balanceCents)} · ${u.country ?? ""}${u.specialist ? " · specialist" : ""}` : u.role === "DESIGNER" ? `${u.plan} · ${u.sessionCredits} credits` : ""}
+                  {u.role === "TESTER" ? `${levelFor(u.points).name} · ${u.points} pts · ${money(u.balanceCents)} · ${u.country ?? ""}${u.specialist ? " · specialist" : ""}` : ""}
                 </td>
                 <td className="p-3">
                   {u.role !== "ADMIN" && (

@@ -27,7 +27,7 @@ export default async function DesignerHome() {
       <PageHeader
         title={`Hi ${user.name.split(" ")[0]}`}
         sub="Here you create tests, follow their progress and review what testers found."
-        actions={projects.length > 0 && <Link className="btn-primary" href="/designer/tests/new">New test</Link>}
+        actions={projects.length > 0 && <Link className="btn-primary" href="/designer/tests/new">Post a test</Link>}
       />
       {showGuide && (
         <Steps
@@ -49,7 +49,7 @@ export default async function DesignerHome() {
             },
             {
               title: "Publish it",
-              text: `Pay per session — your ${user.sessionCredits} free sessions are used first.`,
+              text: "Fund the sessions — it then appears on the public job board.",
               done: live,
               href: unpaid ? `/designer/tests/${unpaid.id}` : undefined,
               cta: "Review & publish",
@@ -84,7 +84,7 @@ export default async function DesignerHome() {
       </form>
 
       {projects.length === 0 ? (
-        <Empty>Create your first project to start a test. You have {user.sessionCredits} free sessions.</Empty>
+        <Empty>Create your first project to post a test.</Empty>
       ) : (
         <div className="space-y-6">
           {projects.map((p) => (

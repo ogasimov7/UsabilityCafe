@@ -16,13 +16,13 @@ export default async function Wallet() {
     <>
       <PageHeader title="Wallet" sub="Your earnings, points and withdrawals." />
       <Callout tone="mint" title="How you get paid">
-        When a designer accepts your session (or doesn&apos;t review it within 72 hours), the fee lands here as available balance.
+        When a designer accepts your session (or doesn&apos;t review it within 72 hours), the reward minus the 10% service fee lands here as available balance.
         Once you have $10 or more, request a payout to your bank or PayPal.
       </Callout>
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <Stat label="Available balance" value={money(user.balanceCents)} hint={user.balanceCents >= 1000 ? "Ready to withdraw" : `${money(1000 - user.balanceCents)} more to withdraw`} />
         <Stat label="Total earned" value={money(earned)} />
-        <Stat label="Points" value={user.points} hint={`${level.emoji} ${level.name}${level.bonus ? ` · +${level.bonus * 100}% fees` : ""}`} />
+        <Stat label="Points" value={user.points} hint={`${level.emoji} ${level.name}`} />
       </div>
       <Note tone="mint" pin={user.balanceCents >= 1000} className="mb-10" panelClassName={user.balanceCents >= 1000 ? "" : "!bg-surface !border-line"}>
         <h2 className="h2 mb-3">Withdraw money</h2>

@@ -11,7 +11,7 @@ async function user(email, data) {
 }
 
 await user("admin@usability.cafe", { name: "Cafe Admin", role: "ADMIN" });
-const designer = await user("designer@usability.cafe", { name: "Dana Designer", role: "DESIGNER", sessionCredits: 5 });
+const designer = await user("designer@usability.cafe", { name: "Dana Designer", role: "DESIGNER" });
 await user("tester@usability.cafe", {
   name: "Toni Tester",
   role: "TESTER",
@@ -45,10 +45,49 @@ if (!(await db.project.findFirst({ where: { ownerId: designer.id } }))) {
       ]),
       attention: JSON.stringify({ prompt: "Type the word “coffee” to show you're paying attention.", answer: "coffee" }),
       sessionsWanted: 5,
-      priceCents: 1200,
+      priceCents: 600,
       minSeconds: 60,
     },
   });
 }
+// Demo listings so the job board isn't empty. Only added once.
+const demoJobs = [
+  ["Banking app", "Send money to a friend in a new banking app", "You just had dinner with a friend and want to pay them back your share. Try the new transfer flow and tell us what feels safe or risky.", "IMAGES", 800, 8, ["MOBILE"], [], null],
+  ["Banking app", "Find and understand your monthly spending", "You want to know how much you spent on food last month. Use the new insights screen and talk us through what you understand.", "LINK", 600, 5, [], [], null],
+  ["Travel booking", "Book a weekend hotel in Baku", "You're planning a weekend trip for two. Find a hotel that fits a mid-range budget and get to the payment step.", "LINK", 700, 10, ["DESKTOP"], ["Azerbaijan", "Turkey"], null],
+  ["Clinic portal", "Book a follow-up appointment as a nurse", "This portal is used by clinic staff. Schedule a follow-up for a patient and check the reminders are right.", "PDF", 2500, 4, ["DESKTOP"], [], "Nurse"],
+  ["Fitness app", "Set up a 4-week running plan", "You want to start running three times a week. Set up a plan in this fitness app concept and say whether you'd stick with it.", "VIDEO", 500, 6, ["MOBILE", "TABLET"], [], null],
+];
+if ((await db.test.count({ where: { project: { ownerId: designer.id } } })) < 2) {
+  for (const [i, [projectName, title, description, conceptType, priceCents, sessionsWanted, devices, countries, profession]] of demoJobs.entries()) {
+    const project =
+      (await db.project.findFirst({ where: { ownerId: designer.id, name: projectName } })) ??
+      (await db.project.create({ data: { name: projectName, ownerId: designer.id } }));
+    await db.test.create({
+      data: {
+        projectId: project.id,
+        title,
+        description,
+        status: "OPEN",
+        publishedAt: new Date(Date.now() - (i + 1) * 5 * 3600_000),
+        conceptType,
+        conceptUrl: conceptType === "LINK" ? "https://example.com" : null,
+        tasks: JSON.stringify([
+          { title: "First look", instructions: "Look around and describe what you think this screen is for." },
+          { title: "Main task", instructions: description },
+        ]),
+        questions: JSON.stringify([{ prompt: "What would you change?", kind: "TEXT" }]),
+        attention: JSON.stringify({ prompt: "Type the word “coffee” to show you're paying attention.", answer: "coffee" }),
+        devices: JSON.stringify(devices),
+        countries: JSON.stringify(countries),
+        profession,
+        sessionsWanted,
+        priceCents,
+        minSeconds: 90,
+      },
+    });
+  }
+}
+
 console.log(`Seeded. Logins (${process.env.SEED_PASSWORD ? "SEED_PASSWORD" : "password123"}): admin@usability.cafe, designer@usability.cafe, tester@usability.cafe`);
 await db.$disconnect();

@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { saveUpload } from "@/lib/storage";
 import { acceptSession, quoteTest, rejectSession, startCheckout } from "@/lib/market";
-import { BASE_FEE_CENTS, PLANS, SPECIALIST_FEE_CENTS, priceForSession, type PlanKey } from "@/lib/rules";
+import { MAX_REWARD_CENTS, MIN_REWARD_CENTS, money } from "@/lib/rules";
 import type { FormState } from "./auth";
 
 async function ownTest(testId: string) {
@@ -39,6 +39,15 @@ const testSchema = z.object({
   ageMax: z.coerce.number().int().min(18).max(99).optional().or(z.literal("").transform(() => undefined)),
   profession: z.string().trim().optional(),
   sessionsWanted: z.coerce.number().int().min(1).max(50),
+  reward: z.coerce
+    .number()
+    .transform((d) => Math.round(d * 100))
+    .pipe(
+      z
+        .number()
+        .min(MIN_REWARD_CENTS, `Pay at least ${money(MIN_REWARD_CENTS)} per session`)
+        .max(MAX_REWARD_CENTS, `Pay at most ${money(MAX_REWARD_CENTS)} per session`),
+    ),
   minSeconds: z.coerce.number().int().min(30).max(1800),
 });
 
@@ -59,10 +68,6 @@ export async function createTest(_: FormState, form: FormData): Promise<FormStat
   if (d.conceptUrl && !/^https?:\/\//.test(d.conceptUrl)) return { error: "The prototype link must start with http(s)://" };
 
   const specialist = form.get("specialist") === "on";
-  const plan = user.plan as PlanKey;
-  // Custom profession screeners are a Pro feature, except for specialist tests.
-  if (d.profession && plan !== "PRO" && !specialist)
-    return { error: "Profession screeners need the Pro plan or a specialist test" };
 
   const test = await db.test.create({
     data: {
@@ -84,8 +89,7 @@ export async function createTest(_: FormState, form: FormData): Promise<FormStat
       specialist,
       sessionsWanted: d.sessionsWanted,
       minSeconds: d.minSeconds,
-      priceCents: priceForSession(plan, specialist),
-      feeCents: specialist ? SPECIALIST_FEE_CENTS : BASE_FEE_CENTS,
+      priceCents: d.reward,
     },
   });
   const assets: string[] = [];
@@ -97,39 +101,18 @@ export async function createTest(_: FormState, form: FormData): Promise<FormStat
 export async function checkoutTest(form: FormData) {
   const { user, test } = await ownTest(String(form.get("testId")));
   if (!["DRAFT", "PENDING_PAYMENT"].includes(test.status)) return;
-  const q = quoteTest(user, test);
+  const q = quoteTest(test);
   const payment = await db.payment.create({
     data: {
       userId: user.id,
       testId: test.id,
       kind: "TEST",
       amountCents: q.amountCents,
-      creditsUsed: q.creditsUsed,
       provider: process.env.STRIPE_SECRET_KEY ? "STRIPE" : "DEV",
     },
   });
-  await db.test.update({ where: { id: test.id }, data: { status: "PENDING_PAYMENT", priceCents: q.unit } });
+  await db.test.update({ where: { id: test.id }, data: { status: "PENDING_PAYMENT" } });
   redirect(await startCheckout(payment.id, `Usability Cafe test: ${test.title} (${test.sessionsWanted} sessions)`));
-}
-
-export async function buyPlan(form: FormData) {
-  const user = await requireUser("DESIGNER");
-  const plan = String(form.get("plan")) as PlanKey;
-  if (!(plan in PLANS) || plan === "PAYG") {
-    await db.user.update({ where: { id: user.id }, data: { plan: "PAYG" } });
-    revalidatePath("/designer/billing");
-    return;
-  }
-  const payment = await db.payment.create({
-    data: {
-      userId: user.id,
-      kind: "PLAN",
-      plan,
-      amountCents: PLANS[plan].monthlyCents,
-      provider: process.env.STRIPE_SECRET_KEY ? "STRIPE" : "DEV",
-    },
-  });
-  redirect(await startCheckout(payment.id, `Usability Cafe ${PLANS[plan].name} plan — 1 month`));
 }
 
 export async function setTestStatus(form: FormData) {

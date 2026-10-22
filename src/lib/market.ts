@@ -3,14 +3,13 @@ import { db, parse } from "./db";
 import {
   AUTO_ACCEPT_HOURS,
   EARLY_ACCESS_DELAY_HOURS,
-  PLANS,
   POINTS_PER_APPROVED,
   REJECTION_PENALTY,
   SPECIALIST_MIN_LEVEL,
   levelFor,
-  priceForSession,
+  platformFee,
   ratingBonus,
-  type PlanKey,
+  testerNet,
 } from "./rules";
 import type { User, Test } from "@prisma/client";
 import { buildReport } from "./analysis";
@@ -38,19 +37,20 @@ export function eligibility(tester: User, test: Test, now = new Date()) {
   return { ok: reasons.length === 0 && !early, reasons, opensAt, early };
 }
 
-export function testerFee(test: Test, tester: User) {
-  return Math.round(test.feeCents * (1 + levelFor(tester.points).bonus));
+/** What the tester receives for an accepted session of this test. */
+export function testerFee(test: Pick<Test, "priceCents">) {
+  return testerNet(test.priceCents);
 }
 
 export async function acceptSession(sessionId: string, rating: number | null, memo = "Session accepted") {
   const s = await db.session.findUnique({ where: { id: sessionId }, include: { test: true, tester: true } });
   if (!s || !["READY", "SUBMITTED", "ANALYZING", "DISPUTED"].includes(s.status)) return;
-  const fee = testerFee(s.test, s.tester);
+  const fee = testerFee(s.test);
   const points = POINTS_PER_APPROVED + ratingBonus(rating);
   await db.$transaction([
     db.session.update({
       where: { id: s.id },
-      data: { status: "ACCEPTED", rating, decidedAt: new Date(), paidCents: fee, pointsAwarded: points },
+      data: { status: "ACCEPTED", rating, decidedAt: new Date(), paidCents: fee, feeCents: platformFee(s.test.priceCents), pointsAwarded: points },
     }),
     db.user.update({
       where: { id: s.testerId },
@@ -103,29 +103,21 @@ export async function autoAcceptDue() {
 
 // ---------- Payments ----------
 
-export function quoteTest(user: User, test: Test) {
-  const unit = priceForSession(user.plan as PlanKey, test.specialist);
-  const creditsUsed = test.specialist ? 0 : Math.min(user.sessionCredits, test.sessionsWanted);
-  const amountCents = (test.sessionsWanted - creditsUsed) * unit;
-  return { unit, creditsUsed, amountCents };
+/** The designer funds every session up front; testers get the reward minus the platform fee. */
+export function quoteTest(test: Pick<Test, "priceCents" | "sessionsWanted">) {
+  return {
+    unit: test.priceCents,
+    amountCents: test.priceCents * test.sessionsWanted,
+    testerGets: testerNet(test.priceCents),
+    fee: platformFee(test.priceCents),
+  };
 }
 
 export async function markPaymentPaid(paymentId: string, providerRef?: string) {
   const p = await db.payment.findUnique({ where: { id: paymentId } });
   if (!p || p.status === "PAID") return p;
   await db.payment.update({ where: { id: p.id }, data: { status: "PAID", providerRef } });
-  if (p.kind === "TEST" && p.testId) {
-    await db.$transaction([
-      db.user.update({ where: { id: p.userId }, data: { sessionCredits: { decrement: p.creditsUsed } } }),
-      db.test.update({ where: { id: p.testId }, data: { status: "OPEN", publishedAt: new Date() } }),
-    ]);
-  } else if (p.kind === "PLAN" && p.plan) {
-    const plan = PLANS[p.plan as PlanKey];
-    await db.user.update({
-      where: { id: p.userId },
-      data: { plan: p.plan, sessionCredits: { increment: plan.included } },
-    });
-  }
+  if (p.testId) await db.test.update({ where: { id: p.testId }, data: { status: "OPEN", publishedAt: new Date() } });
   return p;
 }
 
@@ -135,7 +127,7 @@ export async function startCheckout(paymentId: string, description: string) {
   const base = process.env.APP_URL ?? "http://localhost:3000";
   if (p.amountCents === 0) {
     await markPaymentPaid(p.id);
-    return p.testId ? `/designer/tests/${p.testId}` : "/designer/billing";
+    return p.testId ? `/designer/tests/${p.testId}` : "/designer/payments";
   }
   if (!key) return `/checkout/${p.id}`;
   const body = new URLSearchParams({

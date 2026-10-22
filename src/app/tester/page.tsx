@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db, parse } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { startSession } from "@/app/actions/tester";
@@ -28,7 +29,7 @@ export default async function TesterFeed({ searchParams }: PageProps<"/tester">)
 
   return (
     <>
-      <PageHeader title="Available tests" sub="Pick a test, try the design while saying what you think out loud, and get paid when the designer accepts it." />
+      <PageHeader title="Matched for you" sub="Tests from the job board that fit your profile right now. Try the design while thinking out loud, and get paid when it's accepted." actions={<Link className="btn-ghost" href="/">Browse all tests</Link>} />
       {done === 0 && (
         <Steps
           title="How to earn"
@@ -47,7 +48,7 @@ export default async function TesterFeed({ searchParams }: PageProps<"/tester">)
           <div>
             <div className="text-sm text-muted">Your level — earn points for every accepted session</div>
             <div className="font-display text-2xl font-semibold">{level.emoji} {level.name}</div>
-            <div className="text-sm text-muted">{level.bonus ? `+${level.bonus * 100}% fee bonus · ` : ""}{user.points} points</div>
+            <div className="text-sm text-muted">{user.points} points · higher levels see new tests earlier</div>
           </div>
           <div className="w-full max-w-sm">
             <div className="h-2 overflow-hidden rounded-full bg-surface-2"><div className="h-full rounded-full bg-accent" style={{ width: `${progress}%` }} /></div>
@@ -84,8 +85,8 @@ export default async function TesterFeed({ searchParams }: PageProps<"/tester">)
                 <div className="flex items-start justify-between gap-2">
                   <h2 className="font-semibold">{t.title}</h2>
                   <div className="shrink-0 text-right">
-                    <div className="font-display text-xl font-semibold text-ok">{money(testerFee(t, user))}</div>
-                    <div className="hint">you earn</div>
+                    <div className="font-display text-xl font-semibold text-ok">{money(testerFee(t))}</div>
+                    <div className="hint">you earn (after 10% fee)</div>
                   </div>
                 </div>
                 <p className="mt-1 line-clamp-3 flex-1 text-sm text-muted">{t.description}</p>

@@ -1,19 +1,22 @@
-// Business rules from the project plan: pricing, points and levels.
+// Business rules: marketplace fee, rewards, points and levels.
 
-export const PLANS = {
-  PAYG: { name: "Pay as you go", monthlyCents: 0, included: 0, sessionCents: 1200 },
-  STARTER: { name: "Starter", monthlyCents: 4900, included: 5, sessionCents: 1000 },
-  PRO: { name: "Pro", monthlyCents: 14900, included: 20, sessionCents: 800 },
-} as const;
-export type PlanKey = keyof typeof PLANS;
+// Designers set the reward per session; Usability Cafe keeps 10% of what testers earn (like Upwork's service fee).
+export const PLATFORM_FEE_RATE = 0.1;
+export const MIN_REWARD_CENTS = 200;
+export const MAX_REWARD_CENTS = 50000;
+export const DEFAULT_REWARD_CENTS = 500;
 
-export const BASE_FEE_CENTS = 500;
-export const SPECIALIST_PRICE_CENTS = 2500;
-export const SPECIALIST_FEE_CENTS = 1500;
+export function platformFee(rewardCents: number) {
+  return Math.round(rewardCents * PLATFORM_FEE_RATE);
+}
+
+/** What a tester receives for an accepted session after the platform fee. */
+export function testerNet(rewardCents: number) {
+  return rewardCents - platformFee(rewardCents);
+}
+
 export const MIN_PAYOUT_CENTS = 1000;
 export const AUTO_ACCEPT_HOURS = 72;
-export const FREE_CREDITS_FOR_NEW_DESIGNERS = 5;
-export const FREE_CREDIT_DESIGNER_LIMIT = 100;
 
 export const POINTS_PER_APPROVED = 10;
 export const REJECTION_PENALTY = 5;
@@ -26,10 +29,10 @@ export function ratingBonus(rating: number | null | undefined) {
 }
 
 export const LEVELS = [
-  { key: "ESPRESSO", name: "Espresso", min: 0, bonus: 0, emoji: "☕" },
-  { key: "LATTE", name: "Latte", min: 100, bonus: 0.1, emoji: "🥛" },
-  { key: "CAPPUCCINO", name: "Cappuccino", min: 500, bonus: 0.15, emoji: "🫖" },
-  { key: "BARISTA", name: "Barista", min: 1500, bonus: 0.2, emoji: "🏆" },
+  { key: "ESPRESSO", name: "Espresso", min: 0, emoji: "☕" },
+  { key: "LATTE", name: "Latte", min: 100, emoji: "🥛" },
+  { key: "CAPPUCCINO", name: "Cappuccino", min: 500, emoji: "🫖" },
+  { key: "BARISTA", name: "Barista", min: 1500, emoji: "🏆" },
 ] as const;
 
 export function levelFor(points: number) {
@@ -44,11 +47,6 @@ export function levelFor(points: number) {
 export const EARLY_ACCESS_DELAY_HOURS = [6, 3, 1, 0];
 // Specialist tests need Cappuccino or a verified specialist profile.
 export const SPECIALIST_MIN_LEVEL = 2;
-
-export function priceForSession(plan: PlanKey, specialist: boolean) {
-  if (specialist) return SPECIALIST_PRICE_CENTS;
-  return PLANS[plan].sessionCents;
-}
 
 export function money(cents: number) {
   return `$${(cents / 100).toFixed(2).replace(/\.00$/, "")}`;

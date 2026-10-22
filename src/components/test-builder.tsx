@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createTest } from "@/app/actions/designer";
-import { COUNTRIES, DEVICES, money } from "@/lib/rules";
+import { COUNTRIES, DEFAULT_REWARD_CENTS, DEVICES, MIN_REWARD_CENTS, money, platformFee, testerNet } from "@/lib/rules";
 
 type Task = { title: string; instructions: string };
 type Question = { prompt: string; kind: "TEXT" | "RATING" };
@@ -10,17 +10,9 @@ type Question = { prompt: string; kind: "TEXT" | "RATING" };
 export function TestBuilder({
   projects,
   defaultProject,
-  unitCents,
-  specialistCents,
-  credits,
-  plan,
 }: {
   projects: { id: string; name: string }[];
   defaultProject?: string;
-  unitCents: number;
-  specialistCents: number;
-  credits: number;
-  plan: string;
 }) {
   const [state, action, pending] = useActionState(createTest, undefined);
   const [conceptType, setConceptType] = useState<"LINK" | "IMAGES" | "PDF" | "VIDEO">("LINK");
@@ -30,11 +22,10 @@ export function TestBuilder({
     { prompt: "How easy was it to use? (1 = very hard, 5 = very easy)", kind: "RATING" },
   ]);
   const [count, setCount] = useState(5);
-  const [specialist, setSpecialist] = useState(false);
+  const [reward, setReward] = useState(String(DEFAULT_REWARD_CENTS / 100));
 
-  const unit = specialist ? specialistCents : unitCents;
-  const free = specialist ? 0 : Math.min(credits, count);
-  const total = (count - free) * unit;
+  const unit = Math.round((Number(reward) || 0) * 100);
+  const total = count * unit;
   const accept = { IMAGES: "image/*", PDF: "application/pdf", VIDEO: "video/*", LINK: "" }[conceptType];
 
   return (
@@ -52,8 +43,9 @@ export function TestBuilder({
             </select>
           </div>
           <div>
-            <label className="label" htmlFor="title">Test title</label>
-            <input className="input" id="title" name="title" placeholder="Checkout flow v2" required />
+            <label className="label" htmlFor="title">Job title</label>
+            <input className="input" id="title" name="title" placeholder="Try a grocery checkout and tell us what's confusing" required />
+            <p className="hint mt-1">The title and context are shown publicly on the job board. Tasks and files stay private.</p>
           </div>
           <div>
             <label className="label" htmlFor="description">Context for testers</label>
@@ -176,12 +168,12 @@ export function TestBuilder({
             <p className="hint mt-1">Leave empty for any country.</p>
           </div>
           <div>
-            <label className="label" htmlFor="profession">Profession {plan !== "PRO" && <span className="hint">(Pro plan or specialist tests)</span>}</label>
+            <label className="label" htmlFor="profession">Profession <span className="hint">(optional)</span></label>
             <input className="input" id="profession" name="profession" placeholder="e.g. Nurse" />
           </div>
           <label className="flex items-start gap-2 text-sm">
-            <input type="checkbox" name="specialist" className="mt-1" checked={specialist} onChange={(e) => setSpecialist(e.target.checked)} />
-            <span>Specialist testers (doctors, developers…) — {money(specialistCents)} per session, higher tester fee.</span>
+            <input type="checkbox" name="specialist" className="mt-1" />
+            <span>Only verified specialists or experienced testers (Cappuccino level and up). Consider a higher reward.</span>
           </label>
         </section>
       </div>
@@ -189,6 +181,12 @@ export function TestBuilder({
       <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
         <div className="card space-y-4">
           <h2 className="h2">Summary</h2>
+          <div>
+            <label className="label" htmlFor="reward">Pay per session (USD)</label>
+            <p className="hint mb-1">Like a fixed-price job. Higher pay fills faster.</p>
+            <input className="input" id="reward" name="reward" type="number" min={MIN_REWARD_CENTS / 100} max={500} step="0.5" value={reward}
+              onChange={(e) => setReward(e.target.value)} />
+          </div>
           <div>
             <label className="label" htmlFor="sessionsWanted">How many testers?</label>
             <p className="hint mb-1">5 people usually find most of the big problems.</p>
@@ -200,9 +198,9 @@ export function TestBuilder({
             <input className="input" id="minSeconds" name="minSeconds" type="number" min={30} max={1800} defaultValue={90} />
           </div>
           <dl className="space-y-1 border-t border-line pt-3 text-sm">
-            <div className="flex justify-between"><dt className="text-muted">{count} × {money(unit)}</dt><dd>{money(count * unit)}</dd></div>
-            {free > 0 && <div className="flex justify-between text-ok"><dt>Free credits ({free})</dt><dd>−{money(free * unit)}</dd></div>}
-            <div className="flex justify-between font-semibold"><dt>Total</dt><dd>{money(total)}</dd></div>
+            <div className="flex justify-between font-semibold"><dt>You pay ({count} × {money(unit)})</dt><dd>{money(total)}</dd></div>
+            <div className="flex justify-between text-muted"><dt>Each tester receives</dt><dd>{money(testerNet(unit))}</dd></div>
+            <div className="flex justify-between text-muted"><dt>Service fee (10%, from tester pay)</dt><dd>{money(platformFee(unit))}</dd></div>
           </dl>
           {state?.error && <p role="alert" className="rounded-[14px] bg-bad/10 px-3 py-2 text-sm text-bad">{state.error}</p>}
           <button className="btn-brand w-full" disabled={pending}>{pending ? "Saving…" : "Save & continue"}</button>

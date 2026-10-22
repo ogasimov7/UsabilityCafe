@@ -59,11 +59,7 @@ export function SignupForm({ initialRole }: { initialRole: "DESIGNER" | "TESTER"
         <input className="input" id="password" name="password" type="password" autoComplete="new-password" minLength={8} required />
       </div>
 
-      {role === "DESIGNER" ? (
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="student" /> I&apos;m a design student (5 free sessions)
-        </label>
-      ) : (
+      {role === "TESTER" && (
         <fieldset className="space-y-4 rounded-2xl border border-line p-4">
           <legend className="px-1 text-sm font-medium">Screener profile</legend>
           <div className="grid gap-4 sm:grid-cols-2">

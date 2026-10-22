@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import type { User } from "@prisma/client";
 import { Logo } from "./ui";
@@ -8,10 +9,12 @@ import { levelFor, money } from "@/lib/rules";
 const NAV: Record<string, { href: string; label: string }[]> = {
   DESIGNER: [
     { href: "/designer", label: "My tests" },
-    { href: "/designer/billing", label: "Plan & billing" },
+    { href: "/", label: "Job board" },
+    { href: "/designer/payments", label: "Payments" },
   ],
   TESTER: [
-    { href: "/tester", label: "Available tests" },
+    { href: "/", label: "Find tests" },
+    { href: "/tester", label: "Matched for you" },
     { href: "/tester/sessions", label: "My sessions" },
     { href: "/tester/wallet", label: "Wallet" },
     { href: "/tester/profile", label: "Profile" },
@@ -40,7 +43,7 @@ export function Shell({ user, nav, children }: { user: User; nav: keyof typeof N
               </span>
             )}
             {user.role === "DESIGNER" && (
-              <span className="hidden rounded-full bg-peach px-3 py-1 text-brand md:inline">{user.sessionCredits} free sessions left</span>
+              <Link href="/designer/tests/new" className="btn-brand hidden !px-3 !py-1.5 !text-[13px] md:inline-flex">+ Post a test</Link>
             )}
             <span className="font-medium">{user.name}</span>
             <form action={logout}>
