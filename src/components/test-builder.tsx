@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { createTest } from "@/app/actions/designer";
 import { COUNTRIES, DEFAULT_REWARD_CENTS, DEVICES, MIN_REWARD_CENTS, money, platformFee, testerNet } from "@/lib/rules";
+import { Select } from "./select";
 
 type Task = { title: string; instructions: string };
 type Question = { prompt: string; kind: "TEXT" | "RATING" };
@@ -38,9 +39,7 @@ export function TestBuilder({
           </div>
           <div>
             <label className="label" htmlFor="projectId">Project</label>
-            <select className="input" id="projectId" name="projectId" defaultValue={defaultProject ?? projects[0]?.id}>
-              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            <Select id="projectId" name="projectId" defaultValue={defaultProject ?? projects[0]?.id} options={projects.map((p) => ({ value: p.id, label: p.name }))} />
           </div>
           <div>
             <label className="label" htmlFor="title">Job title</label>
@@ -115,11 +114,9 @@ export function TestBuilder({
             <div key={i} className="flex flex-col gap-2 sm:flex-row">
               <input className="input flex-1" value={q.prompt} placeholder="Question" aria-label={`Question ${i + 1}`}
                 onChange={(e) => setQuestions(questions.map((x, j) => (j === i ? { ...x, prompt: e.target.value } : x)))} />
-              <select className="input sm:w-36" value={q.kind} aria-label="Answer type"
-                onChange={(e) => setQuestions(questions.map((x, j) => (j === i ? { ...x, kind: e.target.value as Question["kind"] } : x)))}>
-                <option value="TEXT">Text</option>
-                <option value="RATING">Rating 1–5</option>
-              </select>
+              <Select className="sm:w-40" value={q.kind} aria-label="Answer type"
+                options={[{ value: "TEXT", label: "Text" }, { value: "RATING", label: "Rating 1–5" }]}
+                onChange={(v) => setQuestions(questions.map((x, j) => (j === i ? { ...x, kind: v as Question["kind"] } : x)))} />
               <button type="button" className="btn-ghost" onClick={() => setQuestions(questions.filter((_, j) => j !== i))}>✕</button>
             </div>
           ))}

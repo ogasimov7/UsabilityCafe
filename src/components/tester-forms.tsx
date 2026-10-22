@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { requestPayout, updateProfile } from "@/app/actions/tester";
 import { COUNTRIES } from "@/lib/rules";
+import { Select } from "./select";
 
 function Msg({ state }: { state: { error?: string; ok?: string } | undefined }) {
   if (state?.error) return <p role="alert" className="rounded-[14px] bg-bad/10 px-3 py-2 text-sm text-bad">{state.error}</p>;
@@ -21,10 +22,8 @@ export function PayoutForm({ max }: { max: number }) {
         </div>
         <div>
           <label className="label" htmlFor="method">Method</label>
-          <select className="input" id="method" name="method">
-            <option value="STRIPE">Bank (Stripe Connect)</option>
-            <option value="PAYPAL">PayPal</option>
-          </select>
+          <Select id="method" name="method" defaultValue="STRIPE"
+            options={[{ value: "STRIPE", label: "Bank (Stripe Connect)" }, { value: "PAYPAL", label: "PayPal" }]} />
         </div>
         <div>
           <label className="label" htmlFor="destination">Account / PayPal email</label>
@@ -48,17 +47,11 @@ export function ProfileForm({ user }: { user: { name: string; country: string | 
       </div>
       <div>
         <label className="label" htmlFor="country">Country</label>
-        <select className="input" id="country" name="country" defaultValue={user.country ?? ""}>
-          {COUNTRIES.map((c) => <option key={c}>{c}</option>)}
-        </select>
+        <Select id="country" name="country" defaultValue={user.country ?? ""} options={COUNTRIES.map((c) => ({ value: c, label: c }))} />
       </div>
       <div>
         <label className="label" htmlFor="device">Main device</label>
-        <select className="input" id="device" name="device" defaultValue={user.device ?? "DESKTOP"}>
-          <option value="DESKTOP">Desktop / laptop</option>
-          <option value="MOBILE">Phone</option>
-          <option value="TABLET">Tablet</option>
-        </select>
+        <Select id="device" name="device" defaultValue={user.device ?? "DESKTOP"} options={[{ value: "DESKTOP", label: "Desktop / laptop" }, { value: "MOBILE", label: "Phone" }, { value: "TABLET", label: "Tablet" }]} />
       </div>
       <div>
         <label className="label" htmlFor="profession">Profession</label>

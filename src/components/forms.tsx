@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { login, signup, joinWaitlist, type FormState } from "@/app/actions/auth";
 import { COUNTRIES } from "@/lib/rules";
+import { Select } from "./select";
 
 function Msg({ state }: { state: FormState }) {
   if (state?.error) return <p role="alert" className="rounded-[14px] bg-bad/10 px-3 py-2 text-sm text-bad">{state.error}</p>;
@@ -70,18 +71,11 @@ export function SignupForm({ initialRole }: { initialRole: "DESIGNER" | "TESTER"
             </div>
             <div>
               <label className="label" htmlFor="country">Country</label>
-              <select className="input" id="country" name="country" required defaultValue="">
-                <option value="" disabled>Choose…</option>
-                {COUNTRIES.map((c) => <option key={c}>{c}</option>)}
-              </select>
+              <Select id="country" name="country" required options={COUNTRIES.map((c) => ({ value: c, label: c }))} />
             </div>
             <div>
               <label className="label" htmlFor="device">Main device</label>
-              <select className="input" id="device" name="device" defaultValue="DESKTOP">
-                <option value="DESKTOP">Desktop / laptop</option>
-                <option value="MOBILE">Phone</option>
-                <option value="TABLET">Tablet</option>
-              </select>
+              <Select id="device" name="device" defaultValue="DESKTOP" options={[{ value: "DESKTOP", label: "Desktop / laptop" }, { value: "MOBILE", label: "Phone" }, { value: "TABLET", label: "Tablet" }]} />
             </div>
             <div>
               <label className="label" htmlFor="profession">Profession</label>
@@ -109,10 +103,13 @@ export function WaitlistForm() {
   return (
     <form action={action} className="flex flex-col gap-2 sm:flex-row">
       <input className="input sm:max-w-xs" name="email" type="email" placeholder="you@example.com" required aria-label="Email" />
-      <select className="input sm:w-40" name="role" aria-label="I am a">
-        <option value="TESTER">I want to test</option>
-        <option value="DESIGNER">I&apos;m a designer</option>
-      </select>
+      <Select
+        className="sm:w-44"
+        name="role"
+        aria-label="I am a"
+        defaultValue="TESTER"
+        options={[{ value: "TESTER", label: "I want to test" }, { value: "DESIGNER", label: "I'm a designer" }]}
+      />
       <button className="btn-brand" disabled={pending}>Join waitlist</button>
       <div className="sm:basis-full"><Msg state={state} /></div>
     </form>

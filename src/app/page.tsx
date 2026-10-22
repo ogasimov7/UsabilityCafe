@@ -6,6 +6,7 @@ import { COUNTRIES, PLATFORM_FEE_RATE, levelFor, money } from "@/lib/rules";
 import { JobCard } from "@/components/job-card";
 import { PublicHeader } from "@/components/public-header";
 import { Logo, Note } from "@/components/ui";
+import { Select } from "@/components/select";
 
 const pick = (v: string | string[] | undefined) => (typeof v === "string" ? v : undefined);
 
@@ -41,20 +42,27 @@ export default async function JobBoard({ searchParams }: PageProps<"/">) {
         <form className="card mb-4 grid gap-2 !p-3 sm:grid-cols-[1fr_auto_auto_auto_auto]" role="search">
           {filters.type && <input type="hidden" name="type" value={filters.type} />}
           <input className="input !rounded-full" name="q" defaultValue={filters.q} placeholder="Search tests, e.g. checkout, banking, onboarding" aria-label="Search tests" />
-          <select className="input !rounded-full sm:w-36" name="device" defaultValue={filters.device ?? ""} aria-label="Device">
-            <option value="">Any device</option>
-            <option value="DESKTOP">Desktop</option>
-            <option value="MOBILE">Mobile</option>
-            <option value="TABLET">Tablet</option>
-          </select>
-          <select className="input !rounded-full sm:w-40" name="country" defaultValue={filters.country ?? ""} aria-label="Country">
-            <option value="">Any country</option>
-            {COUNTRIES.map((c) => <option key={c}>{c}</option>)}
-          </select>
-          <select className="input !rounded-full sm:w-36" name="sort" defaultValue={filters.sort ?? ""} aria-label="Sort">
-            <option value="">Newest</option>
-            <option value="pay">Highest pay</option>
-          </select>
+          <Select
+            className="!rounded-full sm:w-40"
+            name="device"
+            defaultValue={filters.device ?? ""}
+            aria-label="Device"
+            options={[{ value: "", label: "Any device" }, { value: "DESKTOP", label: "Desktop" }, { value: "MOBILE", label: "Mobile" }, { value: "TABLET", label: "Tablet" }]}
+          />
+          <Select
+            className="!rounded-full sm:w-44"
+            name="country"
+            defaultValue={filters.country ?? ""}
+            aria-label="Country"
+            options={[{ value: "", label: "Any country" }, ...COUNTRIES.map((c) => ({ value: c, label: c }))]}
+          />
+          <Select
+            className="!rounded-full sm:w-40"
+            name="sort"
+            defaultValue={filters.sort ?? ""}
+            aria-label="Sort"
+            options={[{ value: "", label: "Newest" }, { value: "pay", label: "Highest pay" }]}
+          />
           <button className="btn-primary">Search</button>
         </form>
 
